@@ -16,8 +16,8 @@ from a2a.types import (
 )
 from dotenv import load_dotenv
 
-from agent import CurrencyAgent
-from agent_executor import CurrencyAgentExecutor
+from currency_exchange_demo.agent import CurrencyAgent
+from currency_exchange_demo.agent_executor import CurrencyAgentExecutor
 
 
 load_dotenv()

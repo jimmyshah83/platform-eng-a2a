@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["src/currency_exchange_demo", "src/platform_eng_a2a_demo"]
 
 [build-system]
 requires = ["hatchling"]

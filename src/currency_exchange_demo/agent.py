@@ -13,7 +13,6 @@ from pydantic import BaseModel
 # Environment setup
 from dotenv import load_dotenv
 import os
-import logging
 load_dotenv()
 
 
