@@ -13,6 +13,7 @@ from pydantic import BaseModel
 # Environment setup
 from dotenv import load_dotenv
 import os
+import logging
 load_dotenv()
 
 
@@ -83,7 +84,7 @@ class CurrencyAgent:
 
         self.tools = [get_exchange_rate]
 
-        self.graph = create_react_agent(
+        self.agent = create_react_agent(
             self.model,
             tools=self.tools,
             checkpointer=memory,
@@ -93,14 +94,14 @@ class CurrencyAgent:
 
     def invoke(self, query, context_id) -> str:
         config = {'configurable': {'thread_id': context_id}}
-        self.graph.invoke({'messages': [('user', query)]}, config)
+        self.agent.invoke({'messages': [('user', query)]}, config)
         return self.get_agent_response(config)
 
     async def stream(self, query, context_id) -> AsyncIterable[dict[str, Any]]:
         inputs = {'messages': [('user', query)]}
         config = {'configurable': {'thread_id': context_id}}
 
-        for item in self.graph.stream(inputs, config, stream_mode='values'):
+        for item in self.agent.stream(inputs, config, stream_mode='values'):
             message = item['messages'][-1]
             if (
                 isinstance(message, AIMessage)
@@ -122,7 +123,7 @@ class CurrencyAgent:
         yield self.get_agent_response(config)
 
     def get_agent_response(self, config):
-        current_state = self.graph.get_state(config)
+        current_state = self.agent.get_state(config)
         structured_response = current_state.values.get('structured_response')
         if structured_response and isinstance(
             structured_response, ResponseFormat
