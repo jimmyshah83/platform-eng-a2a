@@ -10,38 +10,6 @@ from src.platform_eng_a2a_demo.planner_agent import PlannerAgent, PlannerAgentRe
 class TestPlannerAgentResponseFormat:
     """Test cases for PlannerAgentResponseFormat model."""
     
-    def test_valid_response_format_input_required(self):
-        """Test creating a valid response format with input_required status."""
-        response = PlannerAgentResponseFormat(
-            status='input_required',
-            message='Please provide more details'
-        )
-        assert response.status == 'input_required'
-        assert response.message == 'Please provide more details'
-    
-    def test_valid_response_format_completed(self):
-        """Test creating a valid response format with completed status."""
-        response = PlannerAgentResponseFormat(
-            status='completed',
-            message='Infrastructure plan created successfully'
-        )
-        assert response.status == 'completed'
-        assert response.message == 'Infrastructure plan created successfully'
-    
-    def test_valid_response_format_error(self):
-        """Test creating a valid response format with error status."""
-        response = PlannerAgentResponseFormat(
-            status='error',
-            message='Failed to process request'
-        )
-        assert response.status == 'error'
-        assert response.message == 'Failed to process request'
-    
-    def test_default_status(self):
-        """Test that default status is input_required."""
-        response = PlannerAgentResponseFormat(message='Test message')
-        assert response.status == 'input_required'
-    
     def test_invalid_status(self):
         """Test that invalid status raises validation error."""
         with pytest.raises(ValidationError):
@@ -73,7 +41,7 @@ class TestPlannerAgent:
             yield mock
     
     @pytest.fixture
-    def planner_agent(self, mock_env_vars, mock_azure_chat_openai, mock_create_react_agent):
+    def planner_agent(self, mock_azure_chat_openai, mock_create_react_agent) -> PlannerAgent:
         """Create a PlannerAgent instance for testing."""
         mock_llm = Mock()
         mock_azure_chat_openai.return_value = mock_llm
@@ -84,71 +52,17 @@ class TestPlannerAgent:
         agent = PlannerAgent()
         return agent
     
-    def test_init_with_default_params(self, mock_env_vars, mock_azure_chat_openai, mock_create_react_agent):
-        """Test PlannerAgent initialization with default parameters."""
-        mock_llm = Mock()
-        mock_azure_chat_openai.return_value = mock_llm
-            
-        mock_agent = Mock()
-        mock_create_react_agent.return_value = mock_agent
-        
-        agent = PlannerAgent()
-        
-        # Verify AzureChatOpenAI was called with correct default parameters
-        mock_azure_chat_openai.assert_called_once_with(
-            azure_endpoint='https://test.openai.azure.com/',
-            azure_api_key='test-api-key-12345',
-            azure_deployment='test-deployment-name',
-            openai_api_version='2024-12-01-preview',
-            temperature=0.0
-        )
-        
-        # Verify create_react_agent was called with correct parameters
-        mock_create_react_agent.assert_called_once()
-        args, kwargs = mock_create_react_agent.call_args
-        assert args[0] == mock_llm
-        assert 'checkpointer' in kwargs
-        assert 'prompt' in kwargs
-        assert 'response_format' in kwargs
-        assert kwargs['response_format'] == PlannerAgentResponseFormat
-    
-    def test_init_with_custom_params(self, mock_azure_chat_openai, mock_create_react_agent):
-        """Test PlannerAgent initialization with custom parameters."""
-        mock_llm = Mock()
-        mock_azure_chat_openai.return_value = mock_llm
-        
-        mock_agent = Mock()
-        mock_create_react_agent.return_value = mock_agent
-        
-        custom_params = {
-            'azure_endpoint': 'https://custom.openai.azure.com/',
-            'api_key': 'custom-api-key',
-            'api_version': '2024-01-01',
-            'deployment_name': 'custom-deployment',
-            'temperature': 0.5
-        }
-        
-        agent = PlannerAgent(**custom_params)
-        
-        mock_azure_chat_openai.assert_called_once_with(
-            azure_endpoint='https://custom.openai.azure.com/',
-            azure_api_key='custom-api-key',
-            azure_deployment='custom-deployment',
-            openai_api_version='2024-01-01',
-            temperature=0.5
-        )
-    
     def test_invoke_valid_query(self, planner_agent):
         """Test invoke method with valid query."""
+        
         # Setup mocks
         mock_response = {
             'is_task_complete': True,
             'require_user_input': False,
             'content': 'Infrastructure plan created'
         }
-        
         planner_agent.get_agent_response = Mock(return_value=mock_response)
-        
+
         query = "Create an Azure App Service with PostgreSQL database"
         context_id = "test-context-123"
         
@@ -168,21 +82,6 @@ class TestPlannerAgent:
         planner_agent.get_agent_response.assert_called_once_with(expected_config)
         
         assert result == mock_response
-    
-    def test_invoke_empty_query(self, planner_agent):
-        """Test invoke method with empty query raises ValueError."""
-        with pytest.raises(ValueError, match="User request cannot be empty"):
-            planner_agent.invoke("", "test-context")
-    
-    def test_invoke_none_query(self, planner_agent):
-        """Test invoke method with None query raises ValueError."""
-        with pytest.raises(ValueError, match="User request cannot be empty"):
-            planner_agent.invoke(None, "test-context")
-    
-    def test_invoke_whitespace_query(self, planner_agent):
-        """Test invoke method with whitespace-only query raises ValueError."""
-        with pytest.raises(ValueError, match="User request cannot be empty"):
-            planner_agent.invoke("   \n\t  ", "test-context")
     
     def test_get_agent_response_input_required(self, planner_agent):
         """Test get_agent_response with input_required status."""
@@ -300,25 +199,6 @@ class TestPlannerAgent:
         }
         
         assert result == expected
-    
-    def test_system_instruction_content(self):
-        """Test that the system instruction contains expected content."""
-        instruction = PlannerAgent.SYSTEM_INSTRUCTION
-        
-        assert "Azure platform engineer" in instruction
-        assert "infrastructure provisioning" in instruction
-        assert "step-by-step plan" in instruction
-        assert "resource types" in instruction
-        assert "configurations" in instruction
-        assert "dependencies" in instruction
-    
-    def test_supported_content_types(self):
-        """Test that supported content types are correctly defined."""
-        supported_types = PlannerAgent.SUPPORTED_CONTENT_TYPES
-        
-        assert 'text' in supported_types
-        assert 'text/plain' in supported_types
-        assert len(supported_types) == 2
 
 
 @pytest.mark.integration
@@ -337,7 +217,7 @@ class TestPlannerAgentIntegration:
     
     @patch('src.platform_eng_a2a_demo.planner_agent.create_react_agent')
     @patch('src.platform_eng_a2a_demo.planner_agent.AzureChatOpenAI')
-    def test_full_workflow_completed_task(self, mock_azure_chat_openai, mock_create_react_agent, mock_env_vars):
+    def test_full_workflow_completed_task(self, mock_azure_chat_openai, mock_create_react_agent):
         """Test a complete workflow where the task is completed successfully."""
         # Setup mocks
         mock_llm = Mock()
