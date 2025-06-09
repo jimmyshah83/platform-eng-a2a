@@ -34,10 +34,10 @@ class PlannerAgent:
 
 	def __init__(
 		self,
-		azure_endpoint: str = os.environ["AZURE_OPENAI_ENDPOINT"],
-		api_key: str = os.environ["AZURE_OPENAI_API_KEY"],
+		azure_endpoint: str = None,
+		api_key: str = None,
 		api_version: str = "2024-12-01-preview",
-		deployment_name: str = os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
+		deployment_name: str = None,
 		temperature: float = 0.0,
 	 ):
 		"""
@@ -50,6 +50,14 @@ class PlannerAgent:
 			deployment_name: Name of the deployed model
 			temperature: Sampling temperature for response generation
 		"""
+		
+		# Read environment variables at runtime if not provided
+		if azure_endpoint is None:
+			azure_endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
+		if api_key is None:
+			api_key = os.environ["AZURE_OPENAI_API_KEY"]
+		if deployment_name is None:
+			deployment_name = os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"]
   
 		self.llm = AzureChatOpenAI(
 			azure_endpoint=azure_endpoint,
