@@ -20,6 +20,8 @@ class PlannerAgentResponseFormat(BaseModel):
 
 class PlannerAgent:
 	"""A class representing a planner agent that can plan tasks."""
+ 
+	SUPPORTED_CONTENT_TYPES = ['text', 'text/plain']
 
 	SYSTEM_INSTRUCTION = (
 		"""
@@ -31,13 +33,13 @@ class PlannerAgent:
 	)
 
 	def __init__(
-        self,
-        azure_endpoint: str = os.environ["AZURE_OPENAI_ENDPOINT"],
-        api_key: str = os.environ["AZURE_OPENAI_API_KEY"],
-        api_version: str = "2024-12-01-preview",
-        deployment_name: str = os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
-        temperature: float = 0.0,
-     ):
+		self,
+		azure_endpoint: str = os.environ["AZURE_OPENAI_ENDPOINT"],
+		api_key: str = os.environ["AZURE_OPENAI_API_KEY"],
+		api_version: str = "2024-12-01-preview",
+		deployment_name: str = os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
+		temperature: float = 0.0,
+	 ):
 		"""
 		Initialize the PlannerAgent with Azure OpenAI configuration.
 
@@ -51,7 +53,7 @@ class PlannerAgent:
   
 		self.llm = AzureChatOpenAI(
 			azure_endpoint=azure_endpoint,
-            azure_api_key=api_key,
+			azure_api_key=api_key,
 			azure_deployment=deployment_name,
 			openai_api_version=api_version,
 			temperature=temperature,
@@ -61,7 +63,7 @@ class PlannerAgent:
 			self.llm,
 			checkpointer=memory,
 			prompt=self.SYSTEM_INSTRUCTION,
-            response_format=PlannerAgentResponseFormat,    
+			response_format=PlannerAgentResponseFormat,    
 		)
 
 	def invoke(self, query, context_id) -> str:
@@ -87,7 +89,7 @@ class PlannerAgent:
 		return self.get_agent_response(config)
 
 	def get_agent_response(self, config):
-		current_state = self.agent.get_state(config)
+		current_state = self.planner_agent.get_state(config)
 		structured_response = current_state.values.get('structured_response')
 		if structured_response and isinstance(
 			structured_response, PlannerAgentResponseFormat
@@ -119,5 +121,3 @@ class PlannerAgent:
 				'Please try again.'
 			),
 		}
-
-	SUPPORTED_CONTENT_TYPES = ['text', 'text/plain']
