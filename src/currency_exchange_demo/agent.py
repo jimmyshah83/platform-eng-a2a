@@ -1,22 +1,27 @@
-from collections.abc import AsyncIterable
-from typing import Any, Literal
+"""Currency exchange demo agent module.
+
+This module contains the CurrencyAgent class that handles currency conversion
+requests using external APIs and language models.
+"""
+import os
+from typing import Any, Literal, cast, AsyncIterable
 
 import httpx
-
+from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
-from langgraph.checkpoint.memory import MemorySaver
 from langchain_openai import AzureChatOpenAI
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel
 
 # Environment setup
-from dotenv import load_dotenv
-import os
 load_dotenv()
 
 
 memory = MemorySaver()
+
 
 @tool
 def get_exchange_rate(
@@ -25,13 +30,13 @@ def get_exchange_rate(
     currency_date: str = 'latest',
 ):
     """Use this to get current exchange rate.
-
+    
     Args:
         currency_from: The currency to convert from (e.g., "USD").
         currency_to: The currency to convert to (e.g., "EUR").
         currency_date: The date for the exchange rate or "latest". Defaults to
             "latest".
-
+    
     Returns:
         A dictionary containing the exchange rate data, or an error message if
         the request fails.
@@ -61,7 +66,7 @@ class ResponseFormat(BaseModel):
 
 
 class CurrencyAgent:
-    """CurrencyAgent - a specialized assistant for currency convesions."""
+    """CurrencyAgent - a specialized assistant for currency conversions."""
 
     SYSTEM_INSTRUCTION = (
         'You are a specialized assistant for currency conversions. '
@@ -75,10 +80,10 @@ class CurrencyAgent:
     )
 
     def __init__(self):
+        """Initialize the CurrencyAgent with Azure OpenAI model and tools."""
         self.model = AzureChatOpenAI(
-                azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
-                azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
-                openai_api_version="2024-12-01-preview",
+            azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+            azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
         )
 
         self.tools = [get_exchange_rate]
@@ -91,14 +96,32 @@ class CurrencyAgent:
             response_format=ResponseFormat,
         )
 
-    def invoke(self, query, context_id) -> str:
-        config = {'configurable': {'thread_id': context_id}}
+    def invoke(self, query, context_id) -> dict[str, Any]:
+        """Invoke the agent with a query and return the response.
+        
+        Args:
+            query: The user query
+            context_id: The context identifier for the conversation
+            
+        Returns:
+            dict[str, Any]: The agent response
+        """
+        config = cast(RunnableConfig, {'configurable': {'thread_id': context_id}})
         self.agent.invoke({'messages': [('user', query)]}, config)
         return self.get_agent_response(config)
 
     async def stream(self, query, context_id) -> AsyncIterable[dict[str, Any]]:
+        """Stream the agent responses for a given query.
+        
+        Args:
+            query: The user query
+            context_id: The context identifier for the conversation
+            
+        Yields:
+            dict[str, Any]: Stream of agent responses
+        """
         inputs = {'messages': [('user', query)]}
-        config = {'configurable': {'thread_id': context_id}}
+        config = cast(RunnableConfig, {'configurable': {'thread_id': context_id}})
 
         for item in self.agent.stream(inputs, config, stream_mode='values'):
             message = item['messages'][-1]
@@ -122,6 +145,14 @@ class CurrencyAgent:
         yield self.get_agent_response(config)
 
     def get_agent_response(self, config):
+        """Get the final agent response from the current state.
+        
+        Args:
+            config: The runnable configuration
+            
+        Returns:
+            dict: The formatted agent response
+        """
         current_state = self.agent.get_state(config)
         structured_response = current_state.values.get('structured_response')
         if structured_response and isinstance(

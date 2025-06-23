@@ -1,5 +1,10 @@
-import logging
+"""Test client for currency exchange demo.
 
+This module contains a test client that demonstrates how to use the A2A client
+to interact with the currency exchange agent.
+"""
+import asyncio
+import logging
 from typing import Any
 from uuid import uuid4
 
@@ -19,6 +24,7 @@ EXTENDED_AGENT_CARD_PATH = '/agent/authenticatedExtendedCard'
 
 
 async def main() -> None:
+    """Main function to test the currency exchange agent client."""
     # Configure logging to show INFO level messages
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)  # Get a logger instance
@@ -41,7 +47,8 @@ async def main() -> None:
 
         try:
             logger.info(
-                f'Attempting to fetch public agent card from: {base_url}{PUBLIC_AGENT_CARD_PATH}'
+                'Attempting to fetch public agent card from: %s%s',
+                base_url, PUBLIC_AGENT_CARD_PATH
             )
             _public_card = (
                 await resolver.get_agent_card()
@@ -59,8 +66,8 @@ async def main() -> None:
                 try:
                     logger.info(
                         '\nPublic card supports authenticated extended card. '
-                        'Attempting to fetch from: '
-                        f'{base_url}{EXTENDED_AGENT_CARD_PATH}'
+                        'Attempting to fetch from: %s%s',
+                        base_url, EXTENDED_AGENT_CARD_PATH
                     )
                     auth_headers_dict = {
                         'Authorization': 'Bearer dummy-token-for-extended-card'
@@ -84,10 +91,11 @@ async def main() -> None:
                         '\nUsing AUTHENTICATED EXTENDED agent card for client '
                         'initialization.'
                     )
-                except Exception as e_extended:
+                except httpx.HTTPError as e_extended:
                     logger.warning(
-                        f'Failed to fetch extended agent card: {e_extended}. '
+                        'Failed to fetch extended agent card: %s. '
                         'Will proceed with public card.',
+                        e_extended,
                         exc_info=True,
                     )
             elif (
@@ -97,9 +105,9 @@ async def main() -> None:
                     '\nPublic card does not indicate support for an extended card. Using public card.'
                 )
 
-        except Exception as e:
+        except httpx.HTTPError as e:
             logger.error(
-                f'Critical error fetching public agent card: {e}', exc_info=True
+                'Critical error fetching public agent card: %s', e, exc_info=True
             )
             raise RuntimeError(
                 'Failed to fetch the public agent card. Cannot continue.'
@@ -142,6 +150,4 @@ async def main() -> None:
 
 
 if __name__ == '__main__':
-    import asyncio
-
     asyncio.run(main())

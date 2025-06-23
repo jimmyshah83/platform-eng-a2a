@@ -1,5 +1,6 @@
+"""Currency Exchange Demo - Main module for starting the Currency Agent server."""
+
 import logging
-import os
 import sys
 
 import click
@@ -31,25 +32,25 @@ class MissingAPIKeyError(Exception):
 
 
 @click.command()
-@click.option('--host', 'host', default='localhost')
-@click.option('--port', 'port', default=10000)
+@click.option("--host", "host", default="localhost")
+@click.option("--port", "port", default=10000)
 def main(host, port):
     """Starts the Currency Agent server."""
     try:
 
         capabilities = AgentCapabilities(streaming=True, pushNotifications=True)
         skill = AgentSkill(
-            id='convert_currency',
-            name='Currency Exchange Rates Tool',
-            description='Helps with exchange values between various currencies',
-            tags=['currency conversion', 'currency exchange'],
-            examples=['What is exchange rate between USD and GBP?'],
+            id="convert_currency",
+            name="Currency Exchange Rates Tool",
+            description="Helps with exchange values between various currencies",
+            tags=["currency conversion", "currency exchange"],
+            examples=["What is exchange rate between USD and GBP?"],
         )
         agent_card = AgentCard(
-            name='Currency Agent',
-            description='Helps with exchange rates for currencies',
-            url=f'http://{host}:{port}/',
-            version='1.0.0',
+            name="Currency Agent",
+            description="Helps with exchange rates for currencies",
+            url=f"http://{host}:{port}/",
+            version="1.0.0",
             defaultInputModes=CurrencyAgent.SUPPORTED_CONTENT_TYPES,
             defaultOutputModes=CurrencyAgent.SUPPORTED_CONTENT_TYPES,
             capabilities=capabilities,
@@ -71,12 +72,12 @@ def main(host, port):
         # --8<-- [end:DefaultRequestHandler]
 
     except MissingAPIKeyError as e:
-        logger.error(f'Error: {e}')
+        logger.error("Error: %s", e)
         sys.exit(1)
-    except Exception as e:
-        logger.error(f'An error occurred during server startup: {e}')
+    except (OSError, ValueError, RuntimeError) as e:
+        logger.error("An error occurred during server startup: %s", e)
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
