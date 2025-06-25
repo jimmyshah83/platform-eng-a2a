@@ -13,6 +13,8 @@ dependencies = [
     "a2a-sdk",
     "uvicorn",
     "click",
+    "mcp",
+    "azure-identity",
 ]
 
 [project.optional-dependencies]
