@@ -5,10 +5,11 @@ Azure MCP Client for interacting with Azure services through MCP protocol.
 import logging
 import os
 
-from typing import cast
+from typing import cast, AsyncIterable, Any
 from dotenv import load_dotenv
 from langchain_openai import AzureChatOpenAI
 from langchain_core.runnables import RunnableConfig
+from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
@@ -94,7 +95,7 @@ class AzureMCPAgent:
         )
         return azure_mcp_agent
 
-    async def invoke_agent(self, user_message: str):
+    async def invoke_agent(self, user_message: str) -> dict[str, Any]:
         """
         Creates the agent and invokes it with the provided user message.
         Prints the response.
@@ -102,8 +103,73 @@ class AzureMCPAgent:
         agent = await self._create_azure_mcp_agent()
         context_id = "demo-thread-1"
         config = cast(RunnableConfig, {'configurable': {'thread_id': context_id}})
-        response = await agent.ainvoke({'messages': [('user', user_message)]}, config)
-        print("Agent response:", response)
+        await agent.ainvoke({'messages': [('user', user_message)]}, config)
+        return self.get_agent_response(agent, config)
+
+    async def stream(self, query: str, context_id: str) -> AsyncIterable[dict[str, Any]]:
+        """Stream the agent responses for a given query.
+        
+        Args:
+            query: The user query
+            context_id: The context identifier for the conversation
+            
+        Yields:
+            dict[str, Any]: Stream of agent responses
+        """
+        agent = await self._create_azure_mcp_agent()
+        inputs = {'messages': [('user', query)]}
+        config = cast(RunnableConfig, {'configurable': {'thread_id': context_id}})
+
+        for item in agent.stream(inputs, config, stream_mode='values'):
+            message = item['messages'][-1]
+            if (
+                isinstance(message, AIMessage)
+                and message.tool_calls
+                and len(message.tool_calls) > 0
+            ):
+                yield {
+                    'is_task_complete': False,
+                    'require_user_input': False,
+                    'content': 'Processing your request...',
+                }
+            elif isinstance(message, ToolMessage):
+                yield {
+                    'is_task_complete': False,
+                    'require_user_input': False,
+                    'content': 'Executing tools...',
+                }
+
+        yield self.get_agent_response(agent, config)
+
+    def get_agent_response(self, agent, config) -> dict[str, Any]:
+        """Get the final agent response from the current state.
+        
+        Args:
+            agent: The agent instance
+            config: The runnable configuration
+            
+        Returns:
+            dict: The formatted agent response
+        """
+        current_state = agent.get_state(config)
+        structured_response = current_state.values.get('structured_response')
+        if structured_response and isinstance(
+            structured_response, ResponseFormat
+        ):
+            return {
+                'is_task_complete': True,
+                'require_user_input': False,
+                'content': structured_response.message,
+            }
+
+        return {
+            'is_task_complete': False,
+            'require_user_input': True,
+            'content': (
+                'We are unable to process your request at the moment. '
+                'Please try again.'
+            ),
+        }
 
 if __name__ == "__main__":
     import asyncio
