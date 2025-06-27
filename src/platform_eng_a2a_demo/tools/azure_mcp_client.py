@@ -5,16 +5,16 @@ Azure MCP Client for interacting with Azure services through MCP protocol.
 import logging
 import os
 
-from typing import cast, Any
+from typing import cast
 from dotenv import load_dotenv
 from langchain_openai import AzureChatOpenAI
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import BaseTool, ToolException, StructuredTool
+from langchain_core.tools import BaseTool, StructuredTool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from pydantic import SecretStr, BaseModel
-from mcp.types import CallToolResult, EmbeddedResource, ImageContent, TextContent, Tool as MCPTool
+from mcp.types import EmbeddedResource, ImageContent, Tool as MCPTool
 from mcp import ClientSession, StdioServerParameters, stdio_client
 
 load_dotenv()
@@ -29,7 +29,6 @@ logging.basicConfig(
 logger = logging.getLogger("azure_mcp_client")
 
 NonTextContent = ImageContent | EmbeddedResource
-
 
 class ResponseFormat(BaseModel):
     """Respond to the user in this format."""
@@ -101,46 +100,20 @@ class AzureMCPClient:
         response = agent.invoke({'messages': [('user', user_message)]}, config)
         print("Agent response:", response)
 
-
-def _convert_call_tool_result(
-    call_tool_result: CallToolResult,
-) -> tuple[str | list[str], list[NonTextContent] | None]:
-
-    """Convert an MCP tool call result to a LangChain tool result."""
-
-    text_contents: list[TextContent] = []
-    non_text_contents = []    
-    for content in call_tool_result.content:
-        if isinstance(content, TextContent):
-            text_contents.append(content)
-        else:
-            non_text_contents.append(content)    
-    tool_content: str | list[str] = [content.text for content in text_contents]    
-    if len(text_contents) == 1:
-        tool_content = tool_content[0]
-    if call_tool_result.isError:
-        raise ToolException(tool_content)    
-    return tool_content, non_text_contents or None
-
-def _convert_mcp_tool_to_langchain_tool(session: ClientSession, tool: MCPTool) -> BaseTool:
+def _convert_mcp_tool_to_langchain_tool(tool: MCPTool) -> BaseTool:
     """Convert an MCP tool to a LangChain tool."""
-    async def call_tool(**arguments: Any,) -> tuple[str | list[str], list[NonTextContent] | None]:
-        call_tool_result = await session.call_tool(tool.name, arguments)
-        return _convert_call_tool_result(call_tool_result)    
     return StructuredTool(
         name=tool.name,
         description=tool.description or "",
-        args_schema=tool.inputSchema,
-        coroutine=call_tool,
-        response_format="content_and_artifact",
+        args_schema=tool.inputSchema
     )
 
 async def _load_mcp_tools(session: ClientSession) -> list[BaseTool]:
     """Load all available MCP tools and convert them to LangChain tools."""
     tools = await session.list_tools()
-    return [_convert_mcp_tool_to_langchain_tool(session, tool) for tool in tools.tools] 
+    return [_convert_mcp_tool_to_langchain_tool(tool) for tool in tools.tools] 
 
 if __name__ == "__main__":
     import asyncio
     CLIENT = AzureMCPClient()
-    asyncio.run(CLIENT.invoke_agent("List all of the resource groups in my subscription"))
+    asyncio.run(CLIENT.invoke_agent("List all of the resource groups in my subscription id 57123c17-af1a-4ec2-9494-a214fb148bf4"))
