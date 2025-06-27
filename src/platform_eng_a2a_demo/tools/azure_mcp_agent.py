@@ -35,7 +35,7 @@ class ResponseFormat(BaseModel):
     
     message: str
 
-class AzureMCPClient:
+class AzureMCPAgent:
     """
     Azure MCP Client for interacting with Azure services through MCP protocol.
     """
@@ -107,5 +107,5 @@ class AzureMCPClient:
 
 if __name__ == "__main__":
     import asyncio
-    CLIENT = AzureMCPClient()
-    asyncio.run(CLIENT.invoke_agent("List all of the resource groups in my subscription id 57123c17-af1a-4ec2-9494-a214fb148bf4"))
+    AGENT = AzureMCPAgent()
+    asyncio.run(AGENT.invoke_agent("List all of the resource groups in my subscription id " + os.environ["AZURE_SUBSCRIPTION_ID"]))
