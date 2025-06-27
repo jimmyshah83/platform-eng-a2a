@@ -9,13 +9,13 @@ from typing import cast
 from dotenv import load_dotenv
 from langchain_openai import AzureChatOpenAI
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import BaseTool, StructuredTool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from pydantic import SecretStr, BaseModel
-from mcp.types import EmbeddedResource, ImageContent, Tool as MCPTool
-from mcp import ClientSession, StdioServerParameters, stdio_client
+from mcp.types import EmbeddedResource, ImageContent
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain_mcp_adapters.sessions import StdioConnection
 
 load_dotenv()
 
@@ -39,7 +39,6 @@ class AzureMCPClient:
     """
     Azure MCP Client for interacting with Azure services through MCP protocol.
     """
-    
     SYSTEM_INSTRUCTION = (
         "You are a helpful assistant that can use the tools provided to help the user."
     )
@@ -61,10 +60,19 @@ class AzureMCPClient:
             temperature=0,
             azure_ad_token=SecretStr(self.token_provider())
         )
-        self.server_params = StdioServerParameters(
-            command="npx",
-            args=["-y", "@azure/mcp@latest", "server", "start"],
-            env=None
+        self.mcp_client = MultiServerMCPClient(
+            {
+                "azure": StdioConnection(
+                    transport="stdio",
+                    command="npx",
+                    args=["-y", "@azure/mcp@latest", "server", "start"],
+                    env=None,
+                    cwd=None,
+                    encoding="utf-8",
+                    encoding_error_handler="strict",
+                    session_kwargs=None
+                )
+            }
         )
 
     async def _create_azure_mcp_agent(self):
@@ -74,20 +82,17 @@ class AzureMCPClient:
             azure_mcp_agent: The created agent.
         """
         logger.info("Creating Azure MCP Agent")
-        async with stdio_client(self.server_params) as (reader, writer):
-            async with ClientSession(reader, writer) as session:
-                await session.initialize()
-                langchain_mcp_tools = await _load_mcp_tools(session)
-                for tool in langchain_mcp_tools:
-                    print(tool.name)
-                azure_mcp_agent = create_react_agent(
-                    self.llm,
-                    tools=langchain_mcp_tools,
-                    checkpointer=memory,
-                    prompt=self.SYSTEM_INSTRUCTION,
-                    response_format=ResponseFormat,
-                )
-                return azure_mcp_agent
+        langchain_mcp_tools = await self.mcp_client.get_tools()
+        for tool in langchain_mcp_tools:
+            print(tool.name)
+        azure_mcp_agent = create_react_agent(
+            self.llm,
+            tools=langchain_mcp_tools,
+            checkpointer=memory,
+            prompt=self.SYSTEM_INSTRUCTION,
+            response_format=ResponseFormat,
+        )
+        return azure_mcp_agent
 
     async def invoke_agent(self, user_message: str):
         """
@@ -99,19 +104,6 @@ class AzureMCPClient:
         config = cast(RunnableConfig, {'configurable': {'thread_id': context_id}})
         response = agent.invoke({'messages': [('user', user_message)]}, config)
         print("Agent response:", response)
-
-def _convert_mcp_tool_to_langchain_tool(tool: MCPTool) -> BaseTool:
-    """Convert an MCP tool to a LangChain tool."""
-    return StructuredTool(
-        name=tool.name,
-        description=tool.description or "",
-        args_schema=tool.inputSchema
-    )
-
-async def _load_mcp_tools(session: ClientSession) -> list[BaseTool]:
-    """Load all available MCP tools and convert them to LangChain tools."""
-    tools = await session.list_tools()
-    return [_convert_mcp_tool_to_langchain_tool(tool) for tool in tools.tools] 
 
 if __name__ == "__main__":
     import asyncio

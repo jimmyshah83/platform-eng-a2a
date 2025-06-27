@@ -15,6 +15,7 @@ dependencies = [
     "click",
     "mcp",
     "azure-identity",
+    "langchain-mcp-adapters",
 ]
 
 [project.optional-dependencies]
