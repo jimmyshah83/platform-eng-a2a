@@ -18,6 +18,7 @@ from mcp.types import CallToolResult, EmbeddedResource, ImageContent, TextConten
 from mcp import ClientSession, StdioServerParameters, stdio_client
 
 load_dotenv()
+
 memory = MemorySaver()
 
 logging.basicConfig(
