@@ -102,7 +102,7 @@ class AzureMCPClient:
         agent = await self._create_azure_mcp_agent()
         context_id = "demo-thread-1"
         config = cast(RunnableConfig, {'configurable': {'thread_id': context_id}})
-        response = agent.invoke({'messages': [('user', user_message)]}, config)
+        response = await agent.ainvoke({'messages': [('user', user_message)]}, config)
         print("Agent response:", response)
 
 if __name__ == "__main__":
