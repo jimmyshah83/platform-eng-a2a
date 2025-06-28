@@ -5,7 +5,7 @@ Azure MCP Client for interacting with Azure services through MCP protocol.
 import logging
 import os
 
-from typing import cast, AsyncIterable, Any
+from typing import cast, AsyncIterable, Any, Literal
 from dotenv import load_dotenv
 from langchain_openai import AzureChatOpenAI
 from langchain_core.runnables import RunnableConfig
@@ -33,7 +33,8 @@ NonTextContent = ImageContent | EmbeddedResource
 
 class ResponseFormat(BaseModel):
     """Respond to the user in this format."""
-    
+
+    status: Literal['input_required', 'completed', 'error'] = 'input_required'
     message: str
 
 class AzureMCPAgent:
@@ -85,7 +86,7 @@ class AzureMCPAgent:
         logger.info("Creating Azure MCP Agent")
         langchain_mcp_tools = await self.mcp_client.get_tools()
         for tool in langchain_mcp_tools:
-            print(tool.name)
+            logger.info("Available tool: %s", tool.name)
         azure_mcp_agent = create_react_agent(
             self.llm,
             tools=langchain_mcp_tools,
@@ -95,7 +96,7 @@ class AzureMCPAgent:
         )
         return azure_mcp_agent
 
-    async def invoke_agent(self, user_message: str) -> dict[str, Any]:
+    async def invoke_agent(self, query: str) -> dict[str, Any]:
         """
         Creates the agent and invokes it with the provided user message.
         Prints the response.
@@ -103,7 +104,7 @@ class AzureMCPAgent:
         agent = await self._create_azure_mcp_agent()
         context_id = "demo-thread-1"
         config = cast(RunnableConfig, {'configurable': {'thread_id': context_id}})
-        await agent.ainvoke({'messages': [('user', user_message)]}, config)
+        await agent.ainvoke({'messages': [('user', query)]}, config)
         return self.get_agent_response(agent, config)
 
     async def stream(self, query: str, context_id: str) -> AsyncIterable[dict[str, Any]]:
@@ -156,11 +157,24 @@ class AzureMCPAgent:
         if structured_response and isinstance(
             structured_response, ResponseFormat
         ):
-            return {
-                'is_task_complete': True,
-                'require_user_input': False,
-                'content': structured_response.message,
-            }
+            if structured_response.status == 'input_required':
+                return {
+                    'is_task_complete': False,
+                    'require_user_input': True,
+                    'content': structured_response.message,
+                }
+            if structured_response.status == 'error':
+                return {
+                    'is_task_complete': False,
+                    'require_user_input': True,
+                    'content': structured_response.message,
+                }
+            if structured_response.status == 'completed':
+                return {
+                    'is_task_complete': True,
+                    'require_user_input': False,
+                    'content': structured_response.message,
+                }
 
         return {
             'is_task_complete': False,
@@ -173,5 +187,44 @@ class AzureMCPAgent:
 
 if __name__ == "__main__":
     import asyncio
-    AGENT = AzureMCPAgent()
-    asyncio.run(AGENT.invoke_agent("List all of the resource groups in my subscription id " + os.environ["AZURE_SUBSCRIPTION_ID"]))
+    
+    async def main():
+        """Main function to demonstrate Azure MCP Agent functionality.
+        
+        Creates an Azure MCP Agent instance and executes a sample query
+        to list resource groups in the configured Azure subscription.
+        Displays the results in a formatted console output.
+        """
+        logger.info("=" * 60)
+        logger.info("🔧 Azure MCP Agent Demo")
+        logger.info("=" * 60)
+        
+        agent = AzureMCPAgent()
+        query = f"List all of the resource groups in my subscription id {os.environ['AZURE_SUBSCRIPTION_ID']}"
+        
+        logger.info("📝 Query: %s", query)
+        logger.info("-" * 60)
+        
+        try:
+            response = await agent.invoke_agent(query)
+            
+            logger.info("✅ Response:")
+            logger.info("-" * 40)
+            if response['is_task_complete']:
+                logger.info("🎯 Status: Task Completed")
+            else:
+                logger.info("⏳ Status: Task In Progress")
+            
+            if response['require_user_input']:
+                logger.info("💬 Requires User Input: Yes")
+            else:
+                logger.info("💬 Requires User Input: No")
+            
+            logger.info("📄 Content:\n%s", response['content'])
+            logger.info("-" * 60)
+            
+        except (ImportError, OSError, ValueError, KeyError) as e:
+            logger.error("❌ Error: %s", e)
+            logger.info("-" * 60)
+    
+    asyncio.run(main())
