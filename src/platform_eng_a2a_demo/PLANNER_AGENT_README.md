@@ -30,6 +30,28 @@ User Query → Planner Agent → Analysis → Decision
                                    No → Direct Response
 ```
 
+## Project Structure
+
+```
+src/platform_eng_a2a_demo/
+├── planner/                    # Planner Agent Module
+│   ├── __init__.py
+│   ├── planner_agent.py        # Main Planner Agent
+│   └── tools/
+│       ├── __init__.py
+│       └── a2a_tool.py         # A2A Tool for Azure MCP integration
+├── azure_mcp/                  # Azure MCP Agent Module
+│   ├── __init__.py
+│   ├── agent.py                # Azure Agent wrapper
+│   ├── azure_agent.py          # Azure MCP Tool implementation
+│   ├── agent_executor.py       # A2A Agent Executor for Azure MCP
+│   ├── test_client.py          # Test client for Azure MCP
+│   └── tools/
+│       ├── __init__.py
+│       └── azure_mcp_agent.py  # Azure MCP Tool
+└── __init__.py                 # Main package exports
+```
+
 ## Components
 
 ### PlannerAgent
@@ -47,7 +69,7 @@ Structured response format for the planner agent.
 
 ```python
 import asyncio
-from platform_eng_a2a_demo.planner_agent import PlannerAgent
+from platform_eng_a2a_demo.planner import PlannerAgent
 
 async def main():
     # Initialize the planner agent
@@ -140,17 +162,17 @@ The planner agent returns structured responses with the following fields:
 
 ### Basic Example
 ```bash
-python -m platform_eng_a2a_demo.example_usage
+python -m platform_eng_a2a_demo.planner.planner_agent
 ```
 
-### Comprehensive Tests
+### Azure MCP Agent
 ```bash
-python -m platform_eng_a2a_demo.planner_test_client
+python -m platform_eng_a2a_demo.azure_mcp.azure_agent
 ```
 
-### Direct Agent Demo
+### Test Azure MCP Client
 ```bash
-python -m platform_eng_a2a_demo.planner_agent
+python -m platform_eng_a2a_demo.azure_mcp.test_client
 ```
 
 ## Error Handling
@@ -208,4 +230,4 @@ When contributing to the planner agent:
 
 ## License
 
-This project is part of the platform-eng-a2a-demo package. 
+This project is part of the platform-eng-a2a-demo package.

@@ -23,7 +23,7 @@ from a2a.utils import (
 )
 from a2a.utils.errors import ServerError
 
-from platform_eng_a2a_demo.tools.azure_mcp_agent import AzureMCPTool
+from .azure_agent import AzureMCPTool
 
 
 logging.basicConfig(level=logging.INFO)

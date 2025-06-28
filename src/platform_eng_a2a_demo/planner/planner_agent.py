@@ -227,6 +227,7 @@ Always be helpful, clear, and professional in your responses."""
             'requires_azure_operation': False
         }
 
+
 async def main():
     """Demo function to test the Planner Agent."""
     logger.info("=" * 60)

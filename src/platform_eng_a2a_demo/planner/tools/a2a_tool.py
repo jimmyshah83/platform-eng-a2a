@@ -40,28 +40,33 @@ def azure_mcp_agent(query: str, base_url: str = "http://localhost:10001") -> str
 
 async def _invoke_azure_mcp_agent(query: str, base_url: str) -> str:
     """Invoke the Azure MCP agent with a query."""
-    timeout = httpx.Timeout(60.0)    
+    timeout = httpx.Timeout(60.0)
+    
     async with httpx.AsyncClient(timeout=timeout) as httpx_client:
         # Initialize A2ACardResolver
         resolver = A2ACardResolver(
             httpx_client=httpx_client,
             base_url=base_url,
-        )    
+        )
+        
         try:
             logger.info("Fetching agent card from: %s/.well-known/agent.json", base_url)
             agent_card = await resolver.get_agent_card()
-            logger.info("Successfully fetched agent card")            
+            logger.info("Successfully fetched agent card")
+            
             # Initialize A2A Client
             a2a_client = A2AClient(
                 httpx_client=httpx_client,
                 agent_card=agent_card
             )
+            
         except (httpx.HTTPError, httpx.ConnectError, httpx.TimeoutException) as e:
             logger.error("Failed to initialize A2A client: %s", e)
             raise RuntimeError(f"Failed to initialize A2A client: {e}") from e
         except ValueError as e:
             logger.error("Invalid configuration for A2A client: %s", e)
-            raise RuntimeError(f"Invalid configuration for A2A client: {e}") from e        
+            raise RuntimeError(f"Invalid configuration for A2A client: {e}") from e
+        
         # Prepare the message
         send_message_payload: dict[str, Any] = {
             'message': {

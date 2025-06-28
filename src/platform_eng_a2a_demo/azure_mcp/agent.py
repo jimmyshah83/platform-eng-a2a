@@ -5,7 +5,7 @@ to provide a consistent interface for the A2A server.
 """
 from typing import Any, AsyncIterable
 
-from platform_eng_a2a_demo.tools.azure_mcp_agent import AzureMCPTool
+from .azure_agent import AzureMCPTool
 
 
 class AzureAgent:

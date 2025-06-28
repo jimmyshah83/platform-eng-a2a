@@ -1,3 +1,11 @@
-# Platform Engineering A2A Demo Package
+"""
+Platform Engineering A2A Demo Package.
 
-"""platform_eng_a2a_demo: Main package for Azure A2A platform engineering demo."""
+This package contains demonstrations of Azure MCP agent integration with A2A protocol,
+including a planner agent that can delegate Azure operations to the Azure MCP agent.
+"""
+
+from .planner import PlannerAgent
+from .azure_mcp import AzureAgent, AzureMCPTool, AzureMCPAgentExecutor
+
+__all__ = ["PlannerAgent", "AzureAgent", "AzureMCPTool", "AzureMCPAgentExecutor"]
