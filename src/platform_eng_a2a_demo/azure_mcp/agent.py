@@ -5,7 +5,7 @@ to provide a consistent interface for the A2A server.
 """
 from typing import Any, AsyncIterable
 
-from .azure_agent import AzureMCPTool
+from .azure_agent import AzureMCPAgent
 
 
 class AzureAgent:
@@ -13,7 +13,7 @@ class AzureAgent:
 
     def __init__(self):
         """Initialize the AzureAgent with AzureMCPTool."""
-        self.azure_mcp_tool = AzureMCPTool()
+        self.azure_mcp_tool = AzureMCPAgent()
 
     async def stream(self, query: str, context_id: str) -> AsyncIterable[dict[str, Any]]:
         """Stream the agent responses for a given query.

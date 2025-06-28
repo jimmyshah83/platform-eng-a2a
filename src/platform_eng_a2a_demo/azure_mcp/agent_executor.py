@@ -23,7 +23,7 @@ from a2a.utils import (
 )
 from a2a.utils.errors import ServerError
 
-from .azure_agent import AzureMCPTool
+from .azure_agent import AzureMCPAgent
 
 
 logging.basicConfig(level=logging.INFO)
@@ -34,7 +34,7 @@ class AzureMCPAgentExecutor(AgentExecutor):
     """Azure MCP AgentExecutor Example."""
 
     def __init__(self):
-        self.agent = AzureMCPTool()
+        self.agent = AzureMCPAgent()
 
     async def execute(
         self,

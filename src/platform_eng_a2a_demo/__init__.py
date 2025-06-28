@@ -6,6 +6,6 @@ including a planner agent that can delegate Azure operations to the Azure MCP ag
 """
 
 from .planner import PlannerAgent
-from .azure_mcp import AzureAgent, AzureMCPTool, AzureMCPAgentExecutor
+from .azure_mcp import AzureAgent, AzureMCPAgent, AzureMCPTool, AzureMCPAgentExecutor
 
-__all__ = ["PlannerAgent", "AzureAgent", "AzureMCPTool", "AzureMCPAgentExecutor"]
+__all__ = ["PlannerAgent", "AzureAgent", "AzureMCPAgent", "AzureMCPTool", "AzureMCPAgentExecutor"]

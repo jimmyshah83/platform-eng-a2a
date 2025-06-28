@@ -19,8 +19,8 @@ dependencies = [
 ]
 
 [project.scripts]
-azure-mcp = "platform_eng_a2a_demo.azure_mcp.azure_agent:main"
-planner = "platform_eng_a2a_demo.planner.planner_agent:main"
+azure-mcp = "platform_eng_a2a_demo.azure_mcp.__main__:main"
+planner = "platform_eng_a2a_demo.planner.__main__:main"
 
 [project.optional-dependencies]
 test = [

@@ -6,7 +6,8 @@ interacting with Azure services through the MCP protocol.
 """
 
 from .agent import AzureAgent
-from .azure_agent import AzureMCPTool
+from .azure_agent import AzureMCPAgent
+from .tools.azure_mcp_agent import AzureMCPTool
 from .agent_executor import AzureMCPAgentExecutor
 
-__all__ = ["AzureAgent", "AzureMCPTool", "AzureMCPAgentExecutor"] 
+__all__ = ["AzureAgent", "AzureMCPAgent", "AzureMCPTool", "AzureMCPAgentExecutor"] 
