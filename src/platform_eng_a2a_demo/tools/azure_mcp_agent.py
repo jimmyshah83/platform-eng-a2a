@@ -186,8 +186,7 @@ class AzureMCPAgent:
         }
 
 if __name__ == "__main__":
-    import asyncio
-    
+    import asyncio  
     async def main():
         """Main function to demonstrate Azure MCP Agent functionality.
         
@@ -197,34 +196,30 @@ if __name__ == "__main__":
         """
         logger.info("=" * 60)
         logger.info("🔧 Azure MCP Agent Demo")
-        logger.info("=" * 60)
-        
+        logger.info("=" * 60)        
         agent = AzureMCPAgent()
-        query = f"List all of the resource groups in my subscription id {os.environ['AZURE_SUBSCRIPTION_ID']}"
-        
+        query = (
+            f"List all of the resource groups in my subscription id "
+            f"{os.environ['AZURE_SUBSCRIPTION_ID']}"
+        )
         logger.info("📝 Query: %s", query)
         logger.info("-" * 60)
-        
         try:
             response = await agent.invoke_agent(query)
-            
             logger.info("✅ Response:")
             logger.info("-" * 40)
             if response['is_task_complete']:
                 logger.info("🎯 Status: Task Completed")
             else:
                 logger.info("⏳ Status: Task In Progress")
-            
             if response['require_user_input']:
                 logger.info("💬 Requires User Input: Yes")
             else:
                 logger.info("💬 Requires User Input: No")
-            
             logger.info("📄 Content:\n%s", response['content'])
-            logger.info("-" * 60)
-            
+            logger.info("-" * 60)            
         except (ImportError, OSError, ValueError, KeyError) as e:
             logger.error("❌ Error: %s", e)
             logger.info("-" * 60)
-    
     asyncio.run(main())
+    
