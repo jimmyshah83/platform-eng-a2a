@@ -37,7 +37,7 @@ class ResponseFormat(BaseModel):
     status: Literal['input_required', 'completed', 'error'] = 'input_required'
     message: str
 
-class AzureMCPAgent:
+class AzureMCPTool:
     """
     Azure MCP Client for interacting with Azure services through MCP protocol.
     """
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         logger.info("=" * 60)
         logger.info("🔧 Azure MCP Agent Demo")
         logger.info("=" * 60)        
-        agent = AzureMCPAgent()
+        agent = AzureMCPTool()
         query = (
             f"List all of the resource groups in my subscription id "
             f"{os.environ['AZURE_SUBSCRIPTION_ID']}"
