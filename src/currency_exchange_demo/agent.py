@@ -14,11 +14,10 @@ from langchain_core.tools import tool
 from langchain_openai import AzureChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 # Environment setup
 load_dotenv()
-
 
 memory = MemorySaver()
 
@@ -84,6 +83,9 @@ class CurrencyAgent:
         self.model = AzureChatOpenAI(
             azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
             azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
+            api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+            temperature=0,
+            azure_ad_token=SecretStr(os.environ["AZURE_OPENAI_API_KEY"])
         )
 
         self.tools = [get_exchange_rate]

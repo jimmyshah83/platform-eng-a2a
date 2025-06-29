@@ -8,16 +8,17 @@ import logging
 from typing import Any
 from uuid import uuid4
 
+import os
 import httpx
 
 from a2a.client import A2ACardResolver, A2AClient
 from a2a.types import (
-    AgentCard,
     MessageSendParams,
-    SendMessageRequest,
-    SendStreamingMessageRequest,
+    SendMessageRequest
 )
+from dotenv import load_dotenv
 
+load_dotenv()
 
 async def main() -> None:
     """Main function to test the Azure MCP agent client."""
@@ -67,7 +68,7 @@ async def main() -> None:
             'message': {
                 'role': 'user',
                 'parts': [
-                    {'kind': 'text', 'text': 'List all resource groups in my subscription'}
+                    {'kind': 'text', 'text': os.environ["SAMPLE_QUERY"]}
                 ],
                 'messageId': uuid4().hex,
             },
@@ -78,19 +79,18 @@ async def main() -> None:
 
         logger.info('Sending non-streaming message...')
         response = await client.send_message(request)
-        print("Non-streaming response:")
         print(response.model_dump(mode='json', exclude_none=True))
 
         # Test streaming message
-        logger.info('Sending streaming message...')
-        streaming_request = SendStreamingMessageRequest(
-            id=str(uuid4()), params=MessageSendParams(**send_message_payload)
-        )
+        # logger.info('Sending streaming message...')
+        # streaming_request = SendStreamingMessageRequest(
+        #     id=str(uuid4()), params=MessageSendParams(**send_message_payload)
+        # )
 
-        stream_response = client.send_message_streaming(streaming_request)
-        print("Streaming response:")
-        async for chunk in stream_response:
-            print(chunk.model_dump(mode='json', exclude_none=True))
+        # stream_response = client.send_message_streaming(streaming_request)
+        # print("Streaming response:")
+        # async for chunk in stream_response:
+        #     print(chunk.model_dump(mode='json', exclude_none=True))
 
 
 if __name__ == "__main__":
