@@ -184,35 +184,3 @@ class AzureMCPAgent:
                 'Please try again.'
             ),
         }
-
-# if __name__ == "__main__":
-#     import asyncio  
-#     async def main():
-#         """Main function to demonstrate Azure MCP Agent functionality.
-        
-#         Creates an Azure MCP Agent instance and executes a sample query
-#         to list resource groups in the configured Azure subscription.
-#         Displays the results in a formatted console output.
-#         """
-#         logger.info("=" * 60)
-#         logger.info("🔧 Azure MCP Agent Demo")
-#         logger.info("=" * 60)        
-#         agent = AzureMCPTool()
-        
-#         # Example query to list resource groups
-#         sample_query = "List all resource groups in my subscription"
-#         logger.info("Sample Query: %s", sample_query)
-#         logger.info("-" * 40)
-        
-#         try:
-#             # Invoke the agent
-#             result = await agent.invoke_agent(sample_query)
-#             logger.info("Agent Response: %s", result)
-            
-#         except Exception as e:
-#             logger.error("Error during agent execution: %s", e)
-        
-#         logger.info("=" * 60)
-#         logger.info("✅ Demo completed")
-
-#     asyncio.run(main()) 
