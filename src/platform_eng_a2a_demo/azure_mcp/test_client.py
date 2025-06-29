@@ -14,7 +14,7 @@ import httpx
 from a2a.client import A2ACardResolver, A2AClient
 from a2a.types import (
     MessageSendParams,
-    SendMessageRequest
+    SendStreamingMessageRequest
 )
 from dotenv import load_dotenv
 
@@ -68,29 +68,29 @@ async def main() -> None:
             'message': {
                 'role': 'user',
                 'parts': [
-                    {'kind': 'text', 'text': os.environ["SAMPLE_QUERY"]}
+                    {'kind': 'text', 'text': 'List available subscriptions'}
                 ],
                 'messageId': uuid4().hex,
             },
         }
-        request = SendMessageRequest(
-            id=str(uuid4()), params=MessageSendParams(**send_message_payload)
-        )
-
-        logger.info('Sending non-streaming message...')
-        response = await client.send_message(request)
-        print(response.model_dump(mode='json', exclude_none=True))
-
-        # Test streaming message
-        # logger.info('Sending streaming message...')
-        # streaming_request = SendStreamingMessageRequest(
+        # request = SendMessageRequest(
         #     id=str(uuid4()), params=MessageSendParams(**send_message_payload)
         # )
 
-        # stream_response = client.send_message_streaming(streaming_request)
-        # print("Streaming response:")
-        # async for chunk in stream_response:
-        #     print(chunk.model_dump(mode='json', exclude_none=True))
+        # logger.info('Sending non-streaming message...')
+        # response = await client.send_message(request)
+        # print(response.model_dump(mode='json', exclude_none=True))
+
+        # Test streaming message
+        logger.info('Sending streaming message...')
+        streaming_request = SendStreamingMessageRequest(
+            id=str(uuid4()), params=MessageSendParams(**send_message_payload)
+        )
+
+        stream_response = client.send_message_streaming(streaming_request)
+        print("Streaming response:")
+        async for chunk in stream_response:
+            print(chunk.model_dump(mode='json', exclude_none=True))
 
 
 if __name__ == "__main__":
