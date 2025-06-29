@@ -17,7 +17,7 @@ from a2a.types import (
 )
 from dotenv import load_dotenv
 
-from .agent import AzureAgent
+from .azure_agent import AzureMCPAgent
 from .agent_executor import AzureMCPAgentExecutor
 
 
@@ -51,8 +51,8 @@ def main(host, port):
             description="Azure MCP agent for managing Azure resources and services",
             url=f"http://{host}:{port}/",
             version="1.0.0",
-            defaultInputModes=AzureAgent.SUPPORTED_CONTENT_TYPES,
-            defaultOutputModes=AzureAgent.SUPPORTED_CONTENT_TYPES,
+            defaultInputModes=AzureMCPAgent.SUPPORTED_CONTENT_TYPES,
+            defaultOutputModes=AzureMCPAgent.SUPPORTED_CONTENT_TYPES,
             capabilities=capabilities,
             skills=[skill],
         )

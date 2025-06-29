@@ -44,6 +44,7 @@ class AzureMCPAgent:
     SYSTEM_INSTRUCTION = (
         "You are a helpful assistant that can use the tools provided to help the user."
     )
+    SUPPORTED_CONTENT_TYPES = ['text', 'text/plain']
 
     def __init__(self):
         """
