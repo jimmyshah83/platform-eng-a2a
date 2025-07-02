@@ -13,7 +13,7 @@ import httpx
 from a2a.client import A2ACardResolver, A2AClient
 from a2a.types import (
     MessageSendParams,
-    SendStreamingMessageRequest
+    SendMessageRequest
 )
 from dotenv import load_dotenv
 
@@ -28,7 +28,7 @@ async def main() -> None:
     base_url = 'http://localhost:10002'
 
     # Create httpx client with longer timeout for GitHub operations
-    timeout = httpx.Timeout(60.0)  # 60 seconds timeout
+    timeout = httpx.Timeout(120.0)  # 120 seconds timeout
     async with httpx.AsyncClient(timeout=timeout) as httpx_client:
         # Initialize A2ACardResolver
         resolver = A2ACardResolver(
@@ -67,22 +67,19 @@ async def main() -> None:
             'message': {
                 'role': 'user',
                 'parts': [
-                    {'kind': 'text', 'text': 'List my repositories'}
+                    {'kind': 'text', 'text': 'List all public repositories for user jimmyshah83'}
                 ],
                 'messageId': uuid4().hex,
             },
         }
 
         # Test streaming message
-        logger.info('Sending streaming message for GitHub operations...')
-        streaming_request = SendStreamingMessageRequest(
+        request = SendMessageRequest(
             id=str(uuid4()), params=MessageSendParams(**send_message_payload)
         )
 
-        stream_response = client.send_message_streaming(streaming_request)
-        print("Streaming response:")
-        async for chunk in stream_response:
-            print(chunk.model_dump(mode='json', exclude_none=True))
+        response = await client.send_message(request)
+        print(response.model_dump(mode='json', exclude_none=True))
 
 
 if __name__ == "__main__":

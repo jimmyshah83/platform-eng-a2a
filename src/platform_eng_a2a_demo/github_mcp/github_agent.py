@@ -4,10 +4,8 @@ GitHub MCP Client for interacting with GitHub services through MCP protocol.
 
 import logging
 import os
-import socket
 
 from typing import cast, AsyncIterable, Any, Literal
-from dotenv import load_dotenv
 from langchain_openai import AzureChatOpenAI
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import AIMessage, ToolMessage
@@ -18,6 +16,7 @@ from mcp.types import EmbeddedResource, ImageContent
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import StdioConnection
 
+from dotenv import load_dotenv
 load_dotenv()
 
 memory = MemorySaver()
@@ -69,16 +68,19 @@ class GitHubMCPAgent:
         # Initialize GitHub MCP client
         self.mcp_client = MultiServerMCPClient(
             {
-                "github": StdioConnection(
-                    transport="stdio",
-                    command="docker",
-                    args=["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
-                    env={"GITHUB_PERSONAL_ACCESS_TOKEN": github_token},
-                    cwd=None,
-                    encoding="utf-8",
-                    encoding_error_handler="strict",
-                    session_kwargs=None
-                )
+                "github": {
+                    "command": "docker",
+                    "args": [
+                        "run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
+                        "ghcr.io/github/github-mcp-server"
+                    ],
+                    "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": github_token},
+                    "transport": "stdio",
+                    "cwd": None,
+                    "encoding": "utf-8",
+                    "encoding_error_handler": "strict",
+                    "session_kwargs": None
+                }
             }
         )
 
@@ -101,13 +103,12 @@ class GitHubMCPAgent:
         )
         return github_mcp_agent
 
-    async def invoke_agent(self, query: str) -> dict[str, Any]:
+    async def invoke_agent(self, query: str, context_id: str) -> dict[str, Any]:
         """
         Creates the agent and invokes it with the provided user message.
         Prints the response.
         """
         agent = await self._create_github_mcp_agent()
-        context_id = "github-demo-thread-1"
         config = cast(RunnableConfig, {'configurable': {'thread_id': context_id}})
         await agent.ainvoke({'messages': [('user', query)]}, config)
         return self.get_agent_response(agent, config)
