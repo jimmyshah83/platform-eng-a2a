@@ -67,7 +67,7 @@ async def main() -> None:
             'message': {
                 'role': 'user',
                 'parts': [
-                    {'kind': 'text', 'text': 'List all the resource groups in the subscription 57123c17-af1a-4ec2-9494-a214fb148bf4'}
+                    {'kind': 'text', 'text': 'List some azure best practices'}
                 ],
                 'messageId': uuid4().hex,
             },

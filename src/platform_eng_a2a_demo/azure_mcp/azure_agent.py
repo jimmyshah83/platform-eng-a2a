@@ -4,10 +4,12 @@ Azure MCP Client for interacting with Azure services through MCP protocol.
 
 import logging
 import os
+import asyncio
 
 from typing import cast, AsyncIterable, Any, Literal
 from dotenv import load_dotenv
 from langchain_openai import AzureChatOpenAI
+from langchain_core.tools import tool
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.checkpoint.memory import MemorySaver
@@ -85,12 +87,25 @@ class AzureMCPAgent:
             azure_mcp_agent: The created agent.
         """
         logger.info("Creating Azure MCP Agent")
-        langchain_mcp_tools = await self.mcp_client.get_tools()
-        for tool in langchain_mcp_tools:
-            logger.info("Available tool: %s", tool.name)
+        langchain_mcp_tools = await self.mcp_client.get_tools()            
+        
+        sync_tools = []
+        for mcp_tool in langchain_mcp_tools:
+            logger.info("Available Langchain MCP tool: %s", mcp_tool.name)
+            
+            def create_sync_tool(mcp_tool):
+                @tool
+                def sync_tool(input_text: str) -> str:
+                    """Execute the MCP tool with the given input."""
+                    result = asyncio.run(mcp_tool.ainvoke({"input": input_text}))
+                    return str(result)
+                return sync_tool
+            
+            sync_tools.append(create_sync_tool(mcp_tool))
+        
         azure_mcp_agent = create_react_agent(
             self.llm,
-            tools=langchain_mcp_tools,
+            tools=sync_tools,
             checkpointer=memory,
             prompt=self.SYSTEM_INSTRUCTION,
             response_format=ResponseFormat,
