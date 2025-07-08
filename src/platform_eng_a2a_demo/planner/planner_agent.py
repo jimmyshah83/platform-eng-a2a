@@ -219,10 +219,18 @@ Always be helpful, clear, and professional in your responses."""
                 'azure_query': response.azure_query
             }
         
-        # Fallback formatting
-        content = result.get('messages', [{}])[-1].get('content', 'No response available')
+        # Fallback formatting for Pydantic objects
+        if hasattr(result, 'status'):
+            return {
+                'status': result.status,
+                'message': result.message,
+                'requires_azure_operation': result.requires_azure_operation,
+                'azure_query': getattr(result, 'azure_query', None)
+            }
+        
+        # Last resort fallback
         return {
             'status': 'completed',
-            'message': content,
+            'message': str(result),
             'requires_azure_operation': False
         }

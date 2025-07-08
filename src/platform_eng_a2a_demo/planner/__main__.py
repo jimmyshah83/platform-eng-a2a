@@ -25,10 +25,10 @@ def main(query):
         
         print(f"\nResult: {result}")
         
-    except Exception as e:
+    except (ValueError, RuntimeError, ImportError) as e:
         logger.error("An error occurred: %s", e)
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    main() 
+    main()  # Click will handle the query argument via command line or prompt 
