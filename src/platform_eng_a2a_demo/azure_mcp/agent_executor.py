@@ -55,6 +55,7 @@ class AzureMCPAgentExecutor(AgentExecutor):
         updater = TaskUpdater(event_queue, task.id, task.contextId)
         try:
             async for item in self.agent.stream(query, task.contextId):
+                print("Agent Response Item:", item)
                 is_task_complete = item["is_task_complete"]
                 require_user_input = item["require_user_input"]
 

@@ -106,7 +106,9 @@ class AzureMCPAgent:
         context_id = "demo-thread-1"
         config = cast(RunnableConfig, {'configurable': {'thread_id': context_id}})
         await agent.ainvoke({'messages': [('user', query)]}, config)
-        return self.get_agent_response(agent, config)
+        response = self.get_agent_response(agent, config)
+        print("Agent Response:", response)
+        return response
 
     async def stream(self, query: str, context_id: str) -> AsyncIterable[dict[str, Any]]:
         """Stream the agent responses for a given query.
