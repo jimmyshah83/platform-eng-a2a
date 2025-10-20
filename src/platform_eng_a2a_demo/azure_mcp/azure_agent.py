@@ -66,7 +66,6 @@ class AzureMCPAgent:
             azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
             azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
             api_version=os.environ["AZURE_OPENAI_API_VERSION"],
-            temperature=0,
             azure_ad_token=SecretStr(self.token_provider())
         )
         print("[AzureMCPAgent] Setting up MCP client connection...")

@@ -84,7 +84,6 @@ class CurrencyAgent:
             azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
             azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
             api_version=os.environ["AZURE_OPENAI_API_VERSION"],
-            temperature=0,
             azure_ad_token=SecretStr(os.environ["AZURE_OPENAI_API_KEY"])
         )
 
