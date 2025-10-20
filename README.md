@@ -106,6 +106,7 @@ In a separate terminal:
 ```bash
 # Run the planner agent with a query
 uv run planner --query "Help me plan a deployment strategy for Azure resources"
+uv run planner --query "Show me the resource groups in my subscription"
 
 # Or run interactively (will prompt for query)
 uv run planner

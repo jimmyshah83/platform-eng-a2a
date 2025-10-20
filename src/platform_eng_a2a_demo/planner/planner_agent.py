@@ -78,30 +78,41 @@ Always be helpful, clear, and professional in your responses."""
         Args:
             base_url: Base URL for the A2A server
         """
+        print(f"\n[PlannerAgent] Initializing Planner Agent...")
+        print(f"[PlannerAgent] Base URL: {base_url}")
         self.base_url = base_url
         self.llm = None
         self.agent = None
         self._initialized = False
+        print(f"[PlannerAgent] Planner Agent instance created\n")
     
     async def _initialize(self):
         """Initialize the LLM and agent."""
         if self._initialized:
+            print("[PlannerAgent] Already initialized, skipping...")
             return
-            
+        
+        print("\n[PlannerAgent] Starting initialization...")
+        print("[PlannerAgent] Setting up Azure authentication...")
+        
         # Initialize Azure OpenAI LLM
         token_provider = get_bearer_token_provider(
             DefaultAzureCredential(),
             "https://cognitiveservices.azure.com/.default"
         )
         
+        print("[PlannerAgent] Configuring Azure OpenAI LLM...")
         self.llm = AzureChatOpenAI(
             azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
             azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
             api_version=os.environ["AZURE_OPENAI_API_VERSION"],
             azure_ad_token=SecretStr(token_provider())
         )
+        print("[PlannerAgent] Azure OpenAI LLM configured")
         
         # Create the React agent
+        print("[PlannerAgent] Creating React agent with tools...")
+        print(f"[PlannerAgent] Registering tool: azure_mcp_agent")
         self.agent = create_react_agent(
             self.llm,
             tools=[azure_mcp_agent],
@@ -109,8 +120,10 @@ Always be helpful, clear, and professional in your responses."""
             prompt=self.SYSTEM_PROMPT,
             response_format=PlannerResponse,
         )
+        print("[PlannerAgent] React agent created successfully")
         
         self._initialized = True
+        print("[PlannerAgent] Initialization complete!\n")
     
     async def invoke(self, query: str, context_id: str = "default") -> Dict[str, Any]:
         """
@@ -123,17 +136,33 @@ Always be helpful, clear, and professional in your responses."""
         Returns:
             Dict containing the response and status
         """
+        print(f"\n{'='*60}")
+        print(f"[PlannerAgent] invoke() called")
+        print(f"{'='*60}")
+        print(f"[PlannerAgent] Query: {query}")
+        print(f"[PlannerAgent] Context ID: {context_id}")
+        print(f"{'='*60}\n")
+        
         await self._initialize()
         
         if not self.agent:
+            print("[PlannerAgent] ERROR: Agent not initialized!")
             raise RuntimeError("Agent not initialized")
         
+        print("[PlannerAgent] Preparing inputs for agent...")
         inputs = {'messages': [('user', query)]}
         config = RunnableConfig({'configurable': {'thread_id': context_id}})
         
         try:
+            print("[PlannerAgent] Invoking agent...")
             result = await self.agent.ainvoke(inputs, config)
-            return self._format_response(result)
+            print(f"[PlannerAgent] Agent invocation completed")
+            print(f"[PlannerAgent] Raw result type: {type(result)}")
+            print(f"[PlannerAgent] Raw result: {result}")
+            
+            formatted = self._format_response(result)
+            print(f"[PlannerAgent] Formatted response: {formatted}\n")
+            return formatted
         except (ValueError, RuntimeError) as e:
             logger.error("Error in planner agent: %s", e)
             return {
