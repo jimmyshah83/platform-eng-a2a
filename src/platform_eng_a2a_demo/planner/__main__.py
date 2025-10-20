@@ -1,6 +1,7 @@
 """Planner Demo - Main module for testing the Planner Agent."""
 
 import asyncio
+import json
 import logging
 import sys
 
@@ -23,7 +24,8 @@ def main(query):
         # Run the async function
         result = asyncio.run(planner.invoke(query))
         
-        print(f"\nResult: {result}")
+        print("\nResult:")
+        print(json.dumps(result, indent=2, ensure_ascii=False))
         
     except (ValueError, RuntimeError, ImportError) as e:
         logger.error("An error occurred: %s", e)

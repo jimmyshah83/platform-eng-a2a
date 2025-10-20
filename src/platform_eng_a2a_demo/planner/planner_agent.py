@@ -98,7 +98,6 @@ Always be helpful, clear, and professional in your responses."""
             azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
             azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
             api_version=os.environ["AZURE_OPENAI_API_VERSION"],
-            temperature=0,
             azure_ad_token=SecretStr(token_provider())
         )
         
@@ -210,16 +209,46 @@ Always be helpful, clear, and professional in your responses."""
     
     def _format_response(self, result) -> Dict[str, Any]:
         """Format the agent response."""
-        if hasattr(result, 'structured_response') and result.structured_response:
-            response = result.structured_response
-            return {
-                'status': response.status,
-                'message': response.message,
-                'requires_azure_operation': response.requires_azure_operation,
-                'azure_query': response.azure_query
-            }
+        # Try to extract structured response from the result
+        if isinstance(result, dict):
+            # Check if there's a structured_response in the result
+            if 'structured_response' in result:
+                response = result['structured_response']
+                if hasattr(response, 'status'):
+                    return {
+                        'status': response.status,
+                        'message': response.message,
+                        'requires_azure_operation': response.requires_azure_operation,
+                        'azure_query': response.azure_query
+                    }
+            
+            # Check if there are messages in the result
+            if 'messages' in result and result['messages']:
+                last_message = result['messages'][-1]
+                
+                # Extract content from AIMessage
+                if hasattr(last_message, 'content'):
+                    content = last_message.content
+                    
+                    # Check if there's a structured response
+                    if hasattr(last_message, 'response_metadata'):
+                        return {
+                            'status': 'completed',
+                            'message': content,
+                            'requires_azure_operation': False,
+                            'metadata': {
+                                'model': last_message.response_metadata.get('model_name', 'unknown'),
+                                'tokens': last_message.response_metadata.get('token_usage', {})
+                            }
+                        }
+                    
+                    return {
+                        'status': 'completed',
+                        'message': content,
+                        'requires_azure_operation': False
+                    }
         
-        # Fallback formatting for Pydantic objects
+        # Check for Pydantic objects with status attribute
         if hasattr(result, 'status'):
             return {
                 'status': result.status,
@@ -234,3 +263,4 @@ Always be helpful, clear, and professional in your responses."""
             'message': str(result),
             'requires_azure_operation': False
         }
+

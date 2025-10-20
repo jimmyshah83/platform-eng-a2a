@@ -34,32 +34,49 @@ class AzureMCPAgentExecutor(AgentExecutor):
     """Azure MCP AgentExecutor Example."""
 
     def __init__(self):
+        print("[AzureMCPAgentExecutor] Initializing executor...")
         self.agent = AzureMCPAgent()
+        print("[AzureMCPAgentExecutor] Executor initialized\n")
 
     async def execute(
         self,
         context: RequestContext,
         event_queue: EventQueue,
     ) -> None:
+        print(f"\n{'='*60}")
+        print("[AzureMCPAgentExecutor] Execute called")
+        print(f"{'='*60}")
+        
         error = self._validate_request(context)
         if error:
+            print("[AzureMCPAgentExecutor] Request validation failed")
             raise ServerError(error=InvalidParamsError())
 
         query = context.get_user_input()
+        print(f"[AzureMCPAgentExecutor] User query: '{query}'")
+        
         task = context.current_task
         if not task:
             if not context.message:
+                print("[AzureMCPAgentExecutor] No message in context")
                 raise ServerError(error=InvalidParamsError())
+            print("[AzureMCPAgentExecutor] Creating new task...")
             task = new_task(context.message)
             event_queue.enqueue_event(task)
+        
+        print(f"[AzureMCPAgentExecutor] Task ID: {task.id}")
+        print(f"[AzureMCPAgentExecutor] Context ID: {task.contextId}")
+        
         updater = TaskUpdater(event_queue, task.id, task.contextId)
         try:
+            print("[AzureMCPAgentExecutor] Starting agent stream...")
             async for item in self.agent.stream(query, task.contextId):
-                print("Agent Response Item:", item)
+                print(f"[AzureMCPAgentExecutor] Agent Response Item: {item}")
                 is_task_complete = item["is_task_complete"]
                 require_user_input = item["require_user_input"]
 
                 if not is_task_complete and not require_user_input:
+                    print(f"[AzureMCPAgentExecutor] Task working: {item['content']}")
                     updater.update_status(
                         TaskState.working,
                         new_agent_text_message(
@@ -69,6 +86,7 @@ class AzureMCPAgentExecutor(AgentExecutor):
                         ),
                     )
                 elif require_user_input:
+                    print(f"[AzureMCPAgentExecutor] Input required: {item['content']}")
                     updater.update_status(
                         TaskState.input_required,
                         new_agent_text_message(
@@ -80,6 +98,7 @@ class AzureMCPAgentExecutor(AgentExecutor):
                     )
                     break
                 else:
+                    print(f"[AzureMCPAgentExecutor] Task completed: {item['content']}")
                     updater.add_artifact(
                         [Part(root=TextPart(text=item["content"]))],
                         name="azure_mcp_result",
@@ -87,7 +106,11 @@ class AzureMCPAgentExecutor(AgentExecutor):
                     updater.complete()
                     break
 
+            print(f"[AzureMCPAgentExecutor] Execution completed successfully")
+            print(f"{'='*60}\n")
+
         except Exception as e:
+            print(f"[AzureMCPAgentExecutor] ERROR: {e}")
             logger.error("An error occurred while streaming the response: %s", e)
             raise ServerError(error=InternalError()) from e
 

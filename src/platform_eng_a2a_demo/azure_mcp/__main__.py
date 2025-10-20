@@ -36,8 +36,16 @@ class MissingAPIKeyError(Exception):
 @click.option("--port", "port", default=10001)
 def main(host, port):
     """Starts the Azure MCP Agent server."""
+    print(f"\n{'='*60}")
+    print(f"Starting Azure MCP Agent Server")
+    print(f"{'='*60}")
+    print(f"Host: {host}")
+    print(f"Port: {port}")
+    print(f"{'='*60}\n")
+    
     try:
 
+        print("Configuring agent capabilities...")
         capabilities = AgentCapabilities(streaming=True, pushNotifications=True)
         skill = AgentSkill(
             id="azure_operations",
@@ -46,6 +54,7 @@ def main(host, port):
             tags=["azure", "cloud", "resource management"],
             examples=["List all resource groups in my subscription"],
         )
+        print("Creating agent card...")
         agent_card = AgentCard(
             name="Azure MCP Agent",
             description="Azure MCP agent for managing Azure resources and services",
@@ -58,16 +67,21 @@ def main(host, port):
         )
 
         # --8<-- [start:DefaultRequestHandler]
+        print("Initializing HTTP client and request handler...")
         httpx_client = httpx.AsyncClient()
         request_handler = DefaultRequestHandler(
             agent_executor=AzureMCPAgentExecutor(),
             task_store=InMemoryTaskStore(),
             push_notifier=InMemoryPushNotifier(httpx_client),
         )
+        print("Building server application...")
         server = A2AStarletteApplication(
             agent_card=agent_card, http_handler=request_handler
         )
 
+        print(f"\n{'='*60}")
+        print(f"Server ready! Listening on http://{host}:{port}")
+        print(f"{'='*60}\n")
         uvicorn.run(server.build(), host=host, port=port)
         # --8<-- [end:DefaultRequestHandler]
 

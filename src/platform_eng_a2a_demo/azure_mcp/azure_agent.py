@@ -52,12 +52,16 @@ class AzureMCPAgent:
         """
         Initializes the AzureMCPClient with necessary configurations.
         """
+        print("\n[AzureMCPAgent] Initializing Azure MCP Client...")
         logger.info("Initializing Azure MCP Client")
+        
+        print("[AzureMCPAgent] Setting up Azure authentication...")
         self.token_provider = get_bearer_token_provider(
             DefaultAzureCredential(),
             "https://cognitiveservices.azure.com/.default"
         )
 
+        print("[AzureMCPAgent] Configuring Azure OpenAI LLM...")
         self.llm = AzureChatOpenAI(
             azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
             azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"],
@@ -65,6 +69,7 @@ class AzureMCPAgent:
             temperature=0,
             azure_ad_token=SecretStr(self.token_provider())
         )
+        print("[AzureMCPAgent] Setting up MCP client connection...")
         self.mcp_client = MultiServerMCPClient(
             {
                 "azure": StdioConnection(
@@ -79,6 +84,7 @@ class AzureMCPAgent:
                 )
             }
         )
+        print("[AzureMCPAgent] Azure MCP Client initialized successfully!\n")
 
     async def _create_azure_mcp_agent(self):
         """
@@ -86,11 +92,16 @@ class AzureMCPAgent:
         Returns:
             azure_mcp_agent: The created agent.
         """
+        print("[AzureMCPAgent] Creating Azure MCP Agent...")
         logger.info("Creating Azure MCP Agent")
+        
+        print("[AzureMCPAgent] Fetching available MCP tools...")
         langchain_mcp_tools = await self.mcp_client.get_tools()            
         
+        print(f"[AzureMCPAgent] Found {len(langchain_mcp_tools)} MCP tools")
         sync_tools = []
         for mcp_tool in langchain_mcp_tools:
+            print(f"[AzureMCPAgent]   - Registering tool: {mcp_tool.name}")
             logger.info("Available Langchain MCP tool: %s", mcp_tool.name)
             
             def create_sync_tool(mcp_tool):
@@ -103,6 +114,7 @@ class AzureMCPAgent:
             
             sync_tools.append(create_sync_tool(mcp_tool))
         
+        print("[AzureMCPAgent] Building ReAct agent with LLM and tools...")
         azure_mcp_agent = create_react_agent(
             self.llm,
             tools=sync_tools,
@@ -110,6 +122,7 @@ class AzureMCPAgent:
             prompt=self.SYSTEM_INSTRUCTION,
             response_format=ResponseFormat,
         )
+        print("[AzureMCPAgent] Azure MCP Agent created successfully!\n")
         return azure_mcp_agent
 
     async def invoke_agent(self, query: str) -> dict[str, Any]:
@@ -117,12 +130,16 @@ class AzureMCPAgent:
         Creates the agent and invokes it with the provided user message.
         Prints the response.
         """
+        print(f"\n[AzureMCPAgent] Invoking agent with query: '{query}'")
         agent = await self._create_azure_mcp_agent()
         context_id = "demo-thread-1"
+        print(f"[AzureMCPAgent] Using context ID: {context_id}")
         config = cast(RunnableConfig, {'configurable': {'thread_id': context_id}})
+        
+        print("[AzureMCPAgent] Executing agent...")
         await agent.ainvoke({'messages': [('user', query)]}, config)
         response = self.get_agent_response(agent, config)
-        print("Agent Response:", response)
+        print(f"[AzureMCPAgent] Agent Response: {response}\n")
         return response
 
     async def stream(self, query: str, context_id: str) -> AsyncIterable[dict[str, Any]]:
@@ -135,10 +152,14 @@ class AzureMCPAgent:
         Yields:
             dict[str, Any]: Stream of agent responses
         """
+        print(f"\n[AzureMCPAgent] Starting stream for query: '{query}'")
+        print(f"[AzureMCPAgent] Context ID: {context_id}")
+        
         agent = await self._create_azure_mcp_agent()
         inputs = {'messages': [('user', query)]}
         config = cast(RunnableConfig, {'configurable': {'thread_id': context_id}})
 
+        print("[AzureMCPAgent] Streaming agent responses...")
         for item in agent.stream(inputs, config, stream_mode='values'):
             message = item['messages'][-1]
             if (
@@ -146,18 +167,21 @@ class AzureMCPAgent:
                 and message.tool_calls
                 and len(message.tool_calls) > 0
             ):
+                print(f"[AzureMCPAgent] Tool call detected: {len(message.tool_calls)} tool(s)")
                 yield {
                     'is_task_complete': False,
                     'require_user_input': False,
                     'content': 'Processing your request...',
                 }
             elif isinstance(message, ToolMessage):
+                print("[AzureMCPAgent] Tool execution completed")
                 yield {
                     'is_task_complete': False,
                     'require_user_input': False,
                     'content': 'Executing tools...',
                 }
 
+        print("[AzureMCPAgent] Stream completed, generating final response")
         yield self.get_agent_response(agent, config)
 
     def get_agent_response(self, agent, config) -> dict[str, Any]:
@@ -170,11 +194,13 @@ class AzureMCPAgent:
         Returns:
             dict: The formatted agent response
         """
+        print("[AzureMCPAgent] Retrieving agent response from current state...")
         current_state = agent.get_state(config)
         structured_response = current_state.values.get('structured_response')
         if structured_response and isinstance(
             structured_response, ResponseFormat
         ):
+            print(f"[AzureMCPAgent] Response status: {structured_response.status}")
             if structured_response.status == 'input_required':
                 return {
                     'is_task_complete': False,
